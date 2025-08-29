@@ -1,0 +1,41 @@
+name: Journey-juggler CI/CD
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Inject secrets into .env
+        run: |
+          echo "VITE_GEMINI_API_KEY=${{ secrets.VITE_GEMINI_API_KEY }}" >> .env
+          echo "VITE_GOOGLE_AUTHENTICATION_CLIENT_ID=${{ secrets.VITE_GOOGLE_AUTHENTICATION_CLIENT_ID }}" >> .env
+          echo "VITE_FRONTENT_URL=${{ secrets.VITE_FRONTENT_URL }}" >> .env
+          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" >> .env
+          echo "VITE_MESSAGESENDERID=${{ secrets.VITE_MESSAGESENDERID }}" >> .env
+          echo "VITE_FIREBASE_APPID=${{ secrets.VITE_FIREBASE_APPID }}" >> .env
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to Azure VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.AZURE_HOST }}
+          username: ${{ secrets.AZURE_USER }}
+          key: ${{ secrets.AZURE_SSH_KEY }}
+          source: "dist/*"
+          target: "~/apps/journey-juggler"
